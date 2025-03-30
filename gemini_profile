@@ -1,0 +1,131 @@
+import os
+import json
+import yaml
+import google.generativeai as genai
+from selenium.webdriver.common.by import By  # Retained if needed later
+
+# Load API key from config.yaml
+with open('/Users/Agaaz/Downloads/config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+api_key = config['GEMINI_API_KEY']
+
+genai.configure(api_key=api_key)
+
+# Model Configuration
+generation_config = {
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 40,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+}
+
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-pro",
+    generation_config=generation_config,
+)
+
+chat_session = model.start_chat(history=[])
+
+# Function to create profiling
+def generate_profile(linkedin_data, questionnaire_answers):
+    prompt = f"""
+You're an AI profiler for Wavv, an exclusive invite-only social network dedicated to real-life experiences that foster both professional and social growth among driven, high-caliber individuals. Based on the data provided below, evaluate the candidate on the following 20 metrics by assigning a score from 1 to 100 for each:
+
+1. Professional Experience Depth – Evaluate the breadth and depth of work history.
+2. Educational Background – Assess the level and reputation of academic credentials.
+3. Career Trajectory – Examine the progression and growth in the candidate’s career.
+4. Leadership Experience – Consider evidence of leadership, team management, and project direction.
+5. Industry Expertise – Measure specialized skills and domain knowledge.
+6. Professional Accomplishments – Look at awards, recognitions, and quantifiable impacts.
+7. Networking Reach – Gauge the quality and extent of professional and social connections.
+8. Communication Skills – Evaluate clarity, persuasiveness, and overall communication effectiveness.
+9. Collaboration & Teamwork – Assess the ability to work well in groups and foster partnerships.
+10. Innovation & Creativity – Consider the candidate’s track record for bringing fresh ideas.
+11. Problem-Solving Ability – Evaluate critical thinking and handling complex challenges.
+12. Adaptability & Resilience – Measure the capacity to adjust and thrive in dynamic environments.
+13. Emotional Intelligence – Examine self-awareness and interpersonal sensitivity.
+14. Social Engagement – Assess involvement in community or extracurricular activities.
+15. Personal Branding – Consider the strength and consistency of the candidate’s personal image.
+16. Initiative & Drive – Evaluate proactivity and motivation to pursue new opportunities.
+17. Mentorship & Influence – Gauge the ability and willingness to guide and inspire others.
+18. Cultural Fit – Determine alignment with Wavv’s values, ambition, and collaborative spirit.
+19. Work-Life Integration – Assess balance between professional responsibilities and personal life.
+20. Continuous Learning – Measure commitment to ongoing skill development and self-improvement.
+
+In addition to these metrics, generate a concise yet insightful profile summary that highlights:
+   - **Professional Strengths:** Key achievements, leadership, innovation, and industry impact.
+   - **Personal Interests:** Hobbies, passions, and extracurricular pursuits that align with our dynamic community.
+   - **Community Compatibility:** How the candidate’s drive, ambition, and values meet the high standards of Wavv.
+
+Finally, compute a final weighted score as the average of the 20 metric scores (assume equal weighting unless otherwise specified).
+
+LinkedIn Data:
+Name: {linkedin_data.get('name', '')}
+About: {linkedin_data.get('about', '')}
+Experiences: {linkedin_data.get('experiences', '')}
+Education: {linkedin_data.get('educations', '')}
+Interests: {linkedin_data.get('interests', '')}
+Accomplishments: {linkedin_data.get('accomplishment', '')}
+Company: {linkedin_data.get('company', '')}
+Job Title: {linkedin_data.get('job_title', '')}
+Driver: {linkedin_data.get('driver', '')}
+
+Questionnaire Responses:
+{json.dumps(questionnaire_answers, indent=2)}
+
+Return your response strictly in this format:
+
+Profile Summary: <summary>
+
+Individual Metric Scores:
+- Professional Experience Depth: <score>
+- Educational Background: <score>
+- Career Trajectory: <score>
+- Leadership Experience: <score>
+- Industry Expertise: <score>
+- Professional Accomplishments: <score>
+- Networking Reach: <score>
+- Communication Skills: <score>
+- Collaboration & Teamwork: <score>
+- Innovation & Creativity: <score>
+- Problem-Solving Ability: <score>
+- Adaptability & Resilience: <score>
+- Emotional Intelligence: <score>
+- Social Engagement: <score>
+- Personal Branding: <score>
+- Initiative & Drive: <score>
+- Mentorship & Influence: <score>
+- Cultural Fit: <score>
+- Work-Life Integration: <score>
+- Continuous Learning: <score>
+
+Final Weighted Score: <final score>
+
+    """
+    response = chat_session.send_message(prompt)
+    return response.text
+
+# Main execution
+
+# Load LinkedIn data from a JSON file
+linkedin_data_file = '/Users/Agaaz/person_data.json'  # Update this path accordingly
+with open(linkedin_data_file, 'r') as file:
+    linkedin_data = json.load(file)
+
+questionnaire_answers = {
+    "primary_industry": "Tech",
+    "vibe_emojis": "🚀📚🎯",
+    "connection_preference": "Collaborative projects",
+    "non_negotiable": "Privacy-first",
+    "introduced_by": "John Smith",
+    "preferred_connections": "Global",
+    "skill_teach_learn": "Teach: Data Science; Learn: Advanced ML",
+    "engagement_frequency": "Weekly",
+    "niche_hobby": "Photography",
+    "primary_goal": "Find collaborators",
+}
+
+print("ok")
+profile_output = generate_profile(linkedin_data, questionnaire_answers)
+print(profile_output)
